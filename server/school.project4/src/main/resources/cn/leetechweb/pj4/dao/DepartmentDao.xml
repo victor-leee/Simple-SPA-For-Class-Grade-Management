@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.leetechweb.pj4.dao.DepartmentDao">
+    <resultMap id="departmentMap" type="cn.leetechweb.pj4.domain.Department">
+        <id property="id" column="dept_id"/>
+        <result property="name" column="dept_name"/>
+    </resultMap>
+
+    <select id="find" resultMap="departmentMap">
+        SELECT * FROM `department`
+        <where>
+            <if test="dept.name != null">
+                `dept_name` = #{dept.name}
+            </if>
+            <if test="dept.id != null">
+                AND `dept_id` = #{dept.id};
+            </if>
+        </where>
+    </select>
+    
+    <select id="findAll" resultMap="departmentMap">
+        SELECT * FROM `department`;
+    </select>
+
+    <select id="findByColumn" resultMap="departmentMap">
+        SELECT * FROM `department` WHERE ${column} = #{data};
+    </select>
+</mapper>

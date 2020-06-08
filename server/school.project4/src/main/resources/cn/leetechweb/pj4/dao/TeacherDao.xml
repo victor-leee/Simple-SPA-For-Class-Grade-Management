@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.leetechweb.pj4.dao.TeacherDao">
+
+    <resultMap id="teacherMap" type="cn.leetechweb.pj4.domain.Teacher">
+        <id column="teacher_id" property="id"/>
+        <result column="teacher_name" property="name"/>
+        <result column="sex" property="sex"/>
+        <result column="dept_name" property="departmentId"/>
+    </resultMap>
+
+    <insert id="addAll">
+        INSERT INTO `teacher` (`teacher_id`, `teacher_name`, `sex`, `dept_id`) VALUES
+        <foreach collection="list" item="teacher" separator=",">
+            (#{teacher.id}, #{teacher.name}, #{teacher.sex}, #{teacher.departmentId})
+        </foreach>
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM `teach` WHERE TRUE;
+        DELETE FROM `teacher` WHERE TRUE;
+    </delete>
+
+</mapper>

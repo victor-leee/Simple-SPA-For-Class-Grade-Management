@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.leetechweb.pj4.dao.CourseClassDao">
+    <resultMap id="courseClassMap" type="cn.leetechweb.pj4.domain.CourseClass">
+        <id column="course_class_id" property="courseClassId"/>
+        <result column="course_id" property="courseId"/>
+        <result column="course_name" property="courseName"/>
+        <result column="dept_name" property="deptName"/>
+        <result column="start_time" property="startTime"/>
+        <association property="teacher" javaType="cn.leetechweb.pj4.domain.Teacher"
+        select="cn.leetechweb.pj4.dao.CourseClassDao.selectCourseClassTeacher"
+                     column="{courseClassId=course_class_id}"
+        />
+        <collection property="studentList" ofType="cn.leetechweb.pj4.domain.Student"
+                    javaType="java.util.List"
+                    select="cn.leetechweb.pj4.dao.CourseClassDao.selectCourseClassStudentList"
+                    column="{courseClassId=course_class_id}"
+        />
+    </resultMap>
+
+    <resultMap id="minCourseClassMap" type="cn.leetechweb.pj4.domain.CourseClass">
+        <id column="course_class_id" property="courseClassId"/>
+        <result column="course_id" property="courseId"/>
+        <result column="course_name" property="courseName"/>
+        <result column="dept_name" property="deptName"/>
+        <result column="start_time" property="startTime"/>
+    </resultMap>
+
+    <select id="find" resultMap="courseClassMap">
+        SELECT * FROM `course_class` WHERE course_class_id = #{data.courseClassId};
+    </select>
+
+    <select id="findAll" resultMap="courseClassMap">
+        SELECT * FROM `course_class` NATURAL JOIN `department` NATURAL JOIN `course`;
+    </select>
+
+    <select id="selectCourseClassStudentList" resultMap="cn.leetechweb.pj4.dao.StudentDao.studentMap">
+        SELECT * FROM `course_class` NATURAL JOIN `take` NATURAL JOIN `student`
+WHERE `course_class_id` = #{courseClassId};
+    </select>
+
+    <insert id="add">
+        INSERT INTO `course_class` (`course_class_id`, `course_id`, `start_time`)
+        VALUES (#{data.courseClassId}, #{data.courseId}, #{data.startTime});
+    </insert>
+
+    <insert id="addStudentGrade">
+        INSERT INTO `take`(`stu_id`, `course_class_id`,
+                           `general_grade`, `mid_term_grade`,
+                           `ex_grade`, `final_test_grade`, `final_grade`)
+                           VALUES (#{student.id}, #{courseClass.courseClassId},
+                                   #{student.courseClassGrade.generalGrade},
+                                   #{student.courseClassGrade.midTermGrade},
+                                   #{student.courseClassGrade.experimentGrade},
+                                   #{student.courseClassGrade.finalTestGrade},
+                                   #{student.courseClassGrade.finalGrade});
+
+    </insert>
+
+    <insert id="addStudentGradeList" parameterType="java.util.List">
+        INSERT INTO `take`(`stu_id`, `course_class_id`,
+                           `general_grade`, `mid_term_grade`,
+                           `ex_grade`, `final_test_grade`, `final_grade`) VALUES
+                           <foreach collection="studentList" separator="," item="student">
+                               (#{student.id}, #{courseClass.courseClassId},
+                               #{student.courseClassGrade.generalGrade},
+                               #{student.courseClassGrade.midTermGrade},
+                               #{student.courseClassGrade.experimentGrade},
+                               #{student.courseClassGrade.finalTestGrade},
+                               #{student.courseClassGrade.finalGrade})
+                           </foreach>
+    </insert>
+
+    <insert id="addAll">
+        INSERT INTO `course_class`
+        (`course_class_id`, `course_id`, `start_time`) VALUES
+        <foreach collection="courseClassList" item="courseClass" separator=",">
+            (#{courseClass.courseClassId}, #{courseClass.courseId}, #{courseClass.startTime})
+        </foreach>
+    </insert>
+
+    <insert id="addTeacher">
+        INSERT INTO `teach`(`course_class_id`, `teacher_id`) VALUES
+        (#{courseClass.courseClassId}, #{courseClass.teacher.id});
+    </insert>
+
+    <insert id="addTeacherList">
+        INSERT INTO `teach`(`course_class_id`, `teacher_id`) VALUES
+        <foreach collection="courseClassList" separator="," item="courseClass">
+            (#{courseClass.courseClassId}, #{courseClass.teacher.id})
+        </foreach>
+    </insert>
+
+    <update id="update">
+        UPDATE `course_class` SET `course_class_id` = #{data.courseClassId}, `course_id` = #{data.courseId},
+                                  `start_time` = #{data.startTime} WHERE `course_class_id` = #{data.courseClassId};
+    </update>
+
+    <delete id="delete">
+        DELETE FROM `course_class` WHERE `course_class_id` = #{data.courseClassId};
+    </delete>
+
+    <delete id="deleteAll">
+        DELETE FROM `course_class` WHERE TRUE;
+    </delete>
+
+    <select id="selectCourseClassTeacher" resultMap="cn.leetechweb.pj4.dao.TeacherDao.teacherMap">
+        SELECT * FROM `course_class` NATURAL JOIN `teach` NATURAL JOIN `teacher` WHERE `course_class_id` = #{courseClassId};
+    </select>
+
+    <select id="findSameCourseClassCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM `course_class` NATURAL JOIN `course`
+        WHERE `course_name` = CONCAT('CQU_COURSE_', #{courseClassPattern});
+    </select>
+
+    <select id="findMinClassCourseInfo" resultMap="minCourseClassMap">
+        SELECT * FROM `course_class` NATURAL JOIN `course` NATURAL JOIN `department`;
+    </select>
+
+    <select id="findStudentCountBetweenGrades" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM `course_class` NATURAL JOIN `course` NATURAL JOIN `take` WHERE `course_id` = #{courseId}
+        AND `final_grade` &lt;= #{max} AND `final_grade` &gt; #{min};
+    </select>
+
+</mapper>

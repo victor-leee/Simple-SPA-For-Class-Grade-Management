@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.leetechweb.pj4.dao.CourseDao">
+    <resultMap id="courseMap" type="cn.leetechweb.pj4.domain.Course">
+        <id column="course_id" property="id"/>
+        <result column="course_name" property="name"/>
+    </resultMap>
+
+    <select id="find" resultMap="courseMap">
+        SELECT * FROM `course` WHERE `course_id` = #{data.id};
+    </select>
+    <select id="findAll" resultMap="courseMap">
+        SELECT * FROM `course`;
+    </select>
+
+    <select id="findStudentCountBetweenGrades" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM `course_class` NATURAL JOIN `course` NATURAL JOIN `take` WHERE `course_id` = #{courseId}
+        AND `final_grade` &lt;= #{max} AND `final_grade` &gt; #{min};
+    </select>
+
+    <select id="findCourseStudentList" resultMap="cn.leetechweb.pj4.dao.StudentDao.studentMap">
+        SELECT * FROM `course` NATURAL JOIN `course_class` NATURAL JOIN `take` NATURAL JOIN `student`
+        WHERE `course_id` = #{courseId} ORDER BY `final_grade` desc;
+    </select>
+</mapper>

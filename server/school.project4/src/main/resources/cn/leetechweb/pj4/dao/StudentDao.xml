@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="cn.leetechweb.pj4.dao.StudentDao">
+    <resultMap id="studentMap" type="cn.leetechweb.pj4.domain.Student">
+        <id column="stu_id" property="id"/>
+        <result column="stu_name" property="name"/>
+        <result column="sex" property="sex"/>
+        <association property="courseClassGrade" javaType="cn.leetechweb.pj4.domain.Grade">
+            <result column="general_grade" property="generalGrade"/>
+            <result column="mid_term_grade" property="midTermGrade"/>
+            <result column="ex_grade" property="experimentGrade"/>
+            <result column="final_test_grade" property="finalTestGrade"/>
+            <result column="final_grade" property="finalGrade"/>
+        </association>
+    </resultMap>
+
+    <resultMap id="rankMap" type="cn.leetechweb.pj4.DTO.RankDTO">
+        <id column="stu_id" property="studentId"/>
+        <result column="TOTAL_GRADE" property="totalGrade"/>
+        <result column="RANK" property="rank"/>
+        <association property="student" javaType="cn.leetechweb.pj4.domain.Student">
+            <id column="stu_id" property="id"/>
+            <result column="stu_name" property="name"/>
+            <result column="sex" property="sex"/>
+        </association>
+    </resultMap>
+
+    <insert id="add">
+        INSERT INTO `student`(`stu_id`, `stu_name`, `sex`) VALUES (#{data.id}, #{data.name}, #{data.sex});
+    </insert>
+
+    <insert id="addAll" parameterType="java.util.List">
+        INSERT INTO `student`(`stu_id`, `stu_name`, `sex`) VALUES
+        <foreach collection="stuList" item="stu" separator=",">
+            (#{stu.id}, #{stu.name}, #{stu.sex})
+        </foreach>
+    </insert>
+
+    <select id="find" resultMap="studentMap">
+        SELECT * FROM `student` WHERE `stu_id` = #{data.id};
+    </select>
+
+    <select id="findStudentPlus" resultMap="studentMap">
+        SELECT * FROM `student` NATURAL JOIN `take` WHERE `stu_id` = #{studentData.id}
+        AND `course_class_id` = #{courseClass.courseClassId};
+    </select>
+    <select id="findAll" resultMap="studentMap">
+        SELECT * FROM `student`;
+    </select>
+
+    <select id="findAllWithRange" resultMap="studentMap">
+        SELECT *
+        FROM `student`
+        ORDER BY `stu_id`
+        LIMIT #{start}, #{offset};
+    </select>
+
+    <select id="findStudentCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT (`stu_id`)) FROM `student`;
+    </select>
+
+    <select id="findStudentRankingList" resultMap="rankMap">
+        WITH `T_G` AS ( SELECT `stu_id`, `stu_name`, `sex`, SUM(`final_grade`)
+        AS `TOTAL_GRADE` FROM `take` NATURAL JOIN `course_class`
+        NATURAL JOIN `course` NATURAL JOIN `student`
+        GROUP BY `stu_id` ORDER BY `TOTAL_GRADE` DESC )
+
+        SELECT `stu_id`, `stu_name`, `sex`, `TOTAL_GRADE`, (
+        SELECT COUNT(*) + 1 FROM `T_G` AS `T_G_2`
+        WHERE `T_G_1`.`TOTAL_GRADE` &lt; `T_G_2`.`TOTAL_GRADE` AND `T_G_1`.`stu_id` != `T_G_2`.`stu_id`
+        ) AS `RANK` FROM `T_G` AS `T_G_1` ORDER BY `TOTAL_GRADE` DESC;
+    </select>
+
+    <select id="findStudentRanking" resultMap="rankMap">
+        <if test="courseId == null">
+            WITH `T_G` AS ( SELECT `stu_id`, `stu_name`, `sex`, SUM(`final_grade`)
+            AS `TOTAL_GRADE` FROM `take` NATURAL JOIN `course_class`
+            NATURAL JOIN `course` NATURAL JOIN `student`
+            GROUP BY `stu_id` ORDER BY `TOTAL_GRADE` DESC )
+
+            SELECT `stu_id`, `stu_name`, `sex`, `TOTAL_GRADE`, (
+            SELECT COUNT(*) + 1 FROM `T_G` AS `T_G_2`
+            WHERE `T_G_1`.`TOTAL_GRADE` &lt; `T_G_2`.`TOTAL_GRADE` AND `T_G_1`.`stu_id` != `T_G_2`.`stu_id`
+            ) AS `RANK` FROM `T_G` AS `T_G_1` WHERE `stu_id` = #{studentId};
+        </if>
+        <if test="courseId != null">
+            WITH `take_tb` AS (
+            SELECT * FROM `take` NATURAL JOIN `course_class` NATURAL JOIN `course` NATURAL JOIN `student`
+                WHERE `course_id` = #{courseId}
+            )
+
+            SELECT `stu_id`, `stu_name`, `sex`,(
+            SELECT COUNT(*) + 1 FROM `take_tb` AS `t1`
+            WHERE `t2`.`final_grade` &lt; `t1`.`final_grade` AND `t2`.`stu_id` != `t1`.`stu_id`
+            ) AS `RANK`,`final_grade` AS `TOTAL_GRADE`
+            FROM `take_tb` AS `t2`
+            WHERE `stu_id` = #{studentId};
+        </if>
+    </select>
+
+    <update id="update">
+        UPDATE `student` SET `stu_id` = #{data.id}, `stu_name` = #{data.name}, `sex` = #{data.sex} WHERE `stu_id` = #{data.id};
+    </update>
+
+    <delete id="delete">
+        DELETE FROM `student` WHERE `stu_id` = #{data.id};
+    </delete>
+
+    <delete id="deleteAll">
+        DELETE FROM `student` WHERE TRUE;
+    </delete>
+
+</mapper>
